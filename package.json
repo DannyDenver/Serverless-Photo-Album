@@ -10,6 +10,8 @@
     "elasticsearch": "^16.5.0",
     "http-aws-es": "^6.0.0",
     "jimp": "^0.9.3",
+    "jsonwebtoken": "^8.5.1",
+    "middy": "^0.33.2",
     "serverless-aws-documentation": "^1.1.0",
     "serverless-reqvalidator-plugin": "^1.0.3",
     "source-map-support": "^0.5.10",
