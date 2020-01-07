@@ -13,6 +13,10 @@
     "jsonwebtoken": "^8.5.1",
     "middy": "^0.33.2",
     "serverless-aws-documentation": "^1.1.0",
+    "serverless-dynamodb-local": "^0.2.38",
+    "serverless-iam-roles-per-function": "^2.0.2",
+    "serverless-offline": "^5.12.1",
+    "serverless-plugin-canary-deployments": "^0.4.8",
     "serverless-reqvalidator-plugin": "^1.0.3",
     "source-map-support": "^0.5.10",
     "uuid": "^3.3.3"
