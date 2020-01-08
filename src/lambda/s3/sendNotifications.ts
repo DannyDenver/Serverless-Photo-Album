@@ -43,7 +43,6 @@ async function processS3Event(s3Event: S3Event) {
             await sendMessageToClient(connectionId, payload)
         }
     }
-
 }
 
 async function sendMessageToClient(connectionId, payload) {

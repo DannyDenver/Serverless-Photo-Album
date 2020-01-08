@@ -9,10 +9,11 @@ app.get('/groups', async (_req, res) => {
   // TODO: get all groups as before
   const groups = await getAllGroups()
 
+  res.setHeader('Access-Control-Allow-Origin', '*')
   // Return a list of groups
   res.json({
     items: groups
-  }).writeHead(200, {'Access-Control-Allow-Origin': '*'})
+  })
 })
 
 // Create Express server

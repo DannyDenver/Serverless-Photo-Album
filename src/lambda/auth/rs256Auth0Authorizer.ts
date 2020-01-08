@@ -1,18 +1,12 @@
 import { CustomAuthorizerEvent, CustomAuthorizerResult } from "aws-lambda";
 import 'source-map-support/register'
 import { JwtToken } from '../../auth/JwtToken'
-import * as middy from 'middy'
-import { secretsManager } from 'middy/middlewares'
 
 const jwt = require('jsonwebtoken');
 
-const cert = `
-`
+const cert = ``
 
-const certId = process.env.AUTH_0_CERT_ID
-const certField = process.env.AUTH_0_CERT_FIELD
-
-export const handler = middy(async (event: CustomAuthorizerEvent, context): Promise<CustomAuthorizerResult> => {
+export const handler = async (event: CustomAuthorizerEvent): Promise<CustomAuthorizerResult> => {
     try {
         const decodedToken = verifyToken(event.authorizationToken, cert)
         console.log('User was authorized')
@@ -47,7 +41,7 @@ export const handler = middy(async (event: CustomAuthorizerEvent, context): Prom
             }
         }
     }
-})
+}
 
 function verifyToken(authHeader: string, cert: string): JwtToken {
     if (!authHeader) {
@@ -68,15 +62,3 @@ function verifyToken(authHeader: string, cert: string): JwtToken {
         { algorithms: ['RS256'] } // We need to specify that we use the RS256 algorithm
     ) as JwtToken
 }
-
-handler.use(
-    secretsManager({
-        cache: true,
-        cacheExpiryInMillis: 60000,
-        throwOnFailedCall: true,
-        secrets: {
-            AUTH0_CERT: certId
-        },
-
-    })
-)

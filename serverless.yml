@@ -10,9 +10,6 @@ plugins:
   - serverless-dynamodb-local
   - serverless-offline
 
-package:
-  individually: true
-
 provider:
   tracing:
     lambda: true
@@ -36,55 +33,6 @@ provider:
     AUTH_0_CERT_ID: Auth0Cert-${self:provider.stage}
     AUTH_0_SECRET_FIELD: auth0Secret
     AUTH_0_CERT_FIELD: auth0Cert
-
-  iamRoleStatements:
-  - Effect: Allow
-    Action:
-      - codedeploy:*
-    Resource:
-      - '*'
-  - Effect: Allow
-    Action:
-      - dynamodb:Scan
-      - dynamodb:PutItem
-      - dynamodb:GetItem
-    Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.GROUPS_TABLE}
-  - Effect: Allow
-    Action: 
-      - dynamodb:Query
-      - dynamodb:PutItem
-    Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.IMAGES_TABLE}
-  - Effect: Allow
-    Action:
-      - s3:PutObject
-    Resource: "arn:aws:s3:::${self:provider.environment.THUMBNAILS_S3_BUCKET}/*"
-  - Effect: Allow
-    Action: 
-      dynamodb:Query
-    Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.IMAGES_TABLE}/index/${self:provider.environment.IMAGE_ID_INDEX}
-  - Effect: Allow
-    Action:
-      - s3:PutObject
-      - s3:GetObject
-    Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*
-  - Effect: Allow 
-    Action:
-      - dynamodb:Scan
-      - dynamodb:PutItem
-      - dynamodb:DeleteItem
-    Resource: arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}
-  - Effect: Allow
-    Action:
-      - secretsmanager:GetSecretValue
-    Resource: !Ref Auth0Secret 
-  - Effect: Allow
-    Action:
-      - secretsmanager:GetSecretValue
-    Resource: !Ref Auth0Cert 
-  - Effect: Allow
-    Action:
-      - kms:Decrypt
-    Resource: !GetAtt KMSKey.Arn
 
 custom:
   topicName: imagesTopic-${self:provider.stage}
@@ -120,6 +68,15 @@ custom:
 functions:
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
+    iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - secretsmanager:GetSecretValue
+      Resource: !Ref Auth0Secret
+    - Effect: Allow
+      Action:
+      - kms:Decrypt
+      Resource: !GetAtt KMSKey.Arn
 
   RS256Auth:
     handler: src/lambda/auth/rs256Auth0Authorizer.handler
@@ -131,6 +88,11 @@ functions:
           method: get
           path: groups
           cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Scan
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.GROUPS_TABLE}
               
   CreateGroup:
     handler: src/lambda/http/createGroup.handler
@@ -146,6 +108,11 @@ functions:
             description: Create a new group
             requestModels:
               'application/json': GroupRequest
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.GROUPS_TABLE}
 
   GetImages:
     handler: src/lambda/http/getImages.handler
@@ -177,7 +144,21 @@ functions:
             description: Create a new image
             requestModels:
               'application/json': ImageRequest
-
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+          - s3:GetObject
+        Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.GROUPS_TABLE}
+      - Effect: Allow
+        Action: 
+          - dynamodb:PutItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.IMAGES_TABLE}
+        
   GetImage:
     handler: src/lambda/http/getImage.handler
     events:
@@ -185,7 +166,16 @@ functions:
           method: get
           path: images/{imageId}
           cors: true
-
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.IMAGES_TABLE}
+      - Effect: Allow
+        Action: 
+          dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.IMAGES_TABLE}/index/${self:provider.environment.IMAGE_ID_INDEX}
+        
   SendUploadNotifications:
     environment: 
       STAGE: ${self:provider.stage}
@@ -202,19 +192,38 @@ functions:
                 - Ref: AWS::AccountId
                 - ${self:custom.topicName}
           topicName: ${self:custom.topicName}
+    iamRoleStatements:
+      - Effect: Allow 
+        Action:
+          - dynamodb:Scan
+        Resource: arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}
+      - Effect: Allow
+        Action:
+          - execute-api:ManageConnections
+        Resource: 'arn:aws:execute-api:*:*:*/dev/POST/@connections/*'
 
   ConnectHandler:
     handler: src/lambda/websocket/connect.handler
     events:
       - websocket:
           route: $connect
+    iamRoleStatements:
+      - Effect: Allow 
+        Action:
+          - dynamodb:PutItem
+        Resource: arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}
 
   DisconnectHandler:
     handler: src/lambda/websocket/disconnect.handler
     events:
       - websocket:
           route: $disconnect
-  
+    iamRoleStatements:
+      - Effect: Allow 
+        Action:
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}
+
   SyncWithElasticsearch:
     environment:
       ES_ENDPOINT: !GetAtt ImagesSearch.DomainEndpoint
@@ -236,6 +245,15 @@ functions:
                 - Ref: AWS::AccountId
                 - ${self:custom.topicName}
           topicName: ${self:custom.topicName}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - s3:GetObject
+        Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+        Resource: "arn:aws:s3:::${self:provider.environment.THUMBNAILS_S3_BUCKET}/*"
 
 resources:
   Resources:
