@@ -10,6 +10,9 @@ plugins:
   - serverless-dynamodb-local
   - serverless-offline
 
+package:
+  individually: true
+
 provider:
   tracing:
     lambda: true
@@ -151,7 +154,16 @@ functions:
           method: get
           path: groups/{groupId}/images
           cors: true
-
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.IMAGES_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.GROUPS_TABLE}
+        
   CreateImage: 
     handler: src/lambda/http/createImage.handler
     events:
