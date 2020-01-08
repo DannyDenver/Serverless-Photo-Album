@@ -11,6 +11,10 @@ plugins:
   - serverless-offline
 
 provider:
+  tracing:
+    lambda: true
+    apiGateway: true
+
   name: aws
   runtime: nodejs8.10
 
@@ -139,9 +143,6 @@ functions:
             description: Create a new group
             requestModels:
               'application/json': GroupRequest
-    deploymentSettings:
-      type: Linear10PercentEvery1Minute
-      alias: Live
 
   GetImages:
     handler: src/lambda/http/getImages.handler

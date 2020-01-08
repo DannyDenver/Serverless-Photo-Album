@@ -27,3 +27,7 @@ export async function createGroup(
     timestamp: new Date().toISOString(),
   })
 }
+
+export async function groupExists(groupId: string): Promise<boolean> {
+  return groupAccess.groupExists(groupId)
+}
