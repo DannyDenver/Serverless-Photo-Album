@@ -13,7 +13,7 @@
     "express": "^4.17.1",
     "http-aws-es": "^6.0.0",
     "jimp": "^0.9.3",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "middy": "^0.33.2",
     "serverless-aws-documentation": "^1.1.0",
     "serverless-dynamodb-local": "^0.2.38",
